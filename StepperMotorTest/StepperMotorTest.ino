@@ -1,63 +1,61 @@
+// DIR = GREEN, 0
+// STEP = GREY, 1
 
-/*
- Stepper Motor Control -  revolution
+#define dir_pin_x 4   // GREEN
+#define step_pin_x 5 // GREY
 
- This program drives a unipolar or bipolar stepper motor.
- The motor is attached to digital pins 8 - 11 of the Arduino.
+#define dir_pin_y 6   // GREEN
+#define step_pin_y 7  // GREY
 
- The motor should revolve one revolution in one direction, then
- one revolution in the other direction.
-
-
-
-
- */
-//Stepper myStepper(stepsPerRevolution,10, 11);
-
-const int switch_pin = A0;
-const int step_pin = 10;
-const int dir_pin = 11;
-
-const int step_count = 150;
-const int step_delay = 4;
+#define step_count 200
+#define step_delay 800
 
 void setup() {
-  pinMode(switch_pin, INPUT);
 
-  pinMode(step_pin, OUTPUT);
-  pinMode(dir_pin, OUTPUT);
+  pinMode(step_pin_x, OUTPUT);
+  pinMode(dir_pin_x, OUTPUT);
+  pinMode(step_pin_y, OUTPUT);
+  pinMode(dir_pin_y, OUTPUT);
   // initialize the serial port:
   Serial.begin(9600);
 }
 
 void loop() {
-  int val = analogRead(switch_pin);
-  Serial.println(String(val));
+  runMotorBackAndForth(step_pin_y, dir_pin_y);
+  delay(500);
+  runMotorBackAndForth(step_pin_x, dir_pin_x);
+  delay(500);
+}
 
-  // step one revolution  in one direction:
-  Serial.println("clockwise");
-  digitalWrite(dir_pin, LOW);
-  digitalWrite(step_pin, LOW);
+void runMotorBackAndForth(int step_pin, int dir_pin) {
+  L(step_pin);
+  L(dir_pin);
 
   for (int i = 0; i < step_count; i++) {
-    digitalWrite(step_pin, HIGH);
-    delayMicroseconds(10);
-    digitalWrite(step_pin, LOW);
-    delay(step_delay);
+    H(step_pin);
+    delayMicroseconds(step_delay);
+    L(step_pin);
+    delayMicroseconds(step_delay);
   }
+
   delay(500);
   digitalWrite(dir_pin, HIGH);
 
+
   for (int i = 0; i < step_count; i++) {
-    digitalWrite(step_pin, HIGH);
-    delayMicroseconds(10);
-    digitalWrite(step_pin, LOW);
-    delay(step_delay);
+    H(step_pin);
+    delayMicroseconds(step_delay);
+    L(step_pin);
+    delayMicroseconds(step_delay);
   }
 
   delay(500);
+}
 
-  // step one revolution in the other direction:
-  Serial.println("counterclockwise");
-  delay(0);
+void H(int pin) {
+  digitalWrite(pin, HIGH);
+}
+
+void L(int pin) {
+  digitalWrite(pin, LOW);
 }
