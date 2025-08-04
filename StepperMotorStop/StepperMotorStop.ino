@@ -7,7 +7,7 @@ const int stop_switch_pin_y = A2;
 // const int stop_switch_pin_y = A4;
 
 // GREEN WIRE AWAY
-const int dir_pin_x = 4; 
+const int dir_pin_x = 4;
 const int step_pin_x = 5;
 
 // RED WIRE UP
@@ -78,7 +78,8 @@ void setup() {
   Serial.println("System Ready. Send commands: " + cmds);
 }
 
-void dicommandsite() {
+void dispenseWhite() {
+  Serial.println("Dispensing white");
   servoWhite.write(SERVO_MIN);
   delay(1000);
   servoWhite.write(SERVO_MAX);
@@ -95,9 +96,10 @@ void dispenseBlack() {
 
 
 void loop() {
+  // // dispenseBlack();
+  // dispenseBlack();
 
-  // Serial.println(digitalRead(resume_pin) == LOW ? "PRESSED" : "NOT PRESSED");
-
+  Serial.println(digitalRead(resume_pin) == LOW ? "PRESSED" : "NOT PRESSED");
   if (!runCommands && Serial.available() > 0) {
     String input = Serial.readStringUntil('\n');
     input.trim();
