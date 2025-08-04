@@ -1,10 +1,10 @@
 #include <Servo.h>
 
-const int stop_switch_pin_x = A1;
-const int stop_switch_pin_y = A2;
+const int stop_switch_pin_x_min = A1;
+const int stop_switch_pin_y_min = A2;
 
-// const int stop_switch_pin_x = A3;
-// const int stop_switch_pin_y = A4;
+const int stop_switch_pin_x_max = A3;
+const int stop_switch_pin_y_max = A4;
 
 // GREEN WIRE AWAY
 const int dir_pin_x = 4;
@@ -14,15 +14,20 @@ const int step_pin_x = 5;
 const int dir_pin_y = 6;
 const int step_pin_y = 7;
 
-const int stepDelay = 800;    // microseconds (speed)
+const int stepDelay = 800;    // microseconds (movement speed)
+
+// TODO: Calibrate this:
 const int stepsPerTile = 80;  // steps for one tile distance
 
 
 const int servoWhitePin = 11;
 const int servoBlackPin = 10;
 
-const int SERVO_MAX = 179;
-const int SERVO_MIN = 0;
+const int SERVO_MAX_BLACK = 0;
+const int SERVO_MIN_BLACK = 178;
+
+const int SERVO_MAX_WHITE = 0;
+const int SERVO_MIN_WHITE = 178;
 
 const int resume_pin = A0;
 
@@ -31,6 +36,8 @@ int currentY = 0;
 int maxX = 5;  // number of tiles horizontally
 int maxY = 5;  // number of tiles vertically
 
+int x_max = 0;
+int y_max = 0;
 
 Servo servoWhite;
 Servo servoBlack;
@@ -38,8 +45,25 @@ Servo servoBlack;
 
 
 String commands[] = {
-  "HOME"
-  , "X5Y0", "PAUSE", "X10Y0", "X8Y0", "X12Y5", "X5Y5", "X5Y0", "HOME"
+  "HOME",
+  "X1Y1",
+  // "HOME",
+  // "PAUSE",
+  // "HOME",
+  // "PAUSE",
+  // "BLACK",
+  // "WHITE"
+  // "HOME",
+  // "PAUSE",
+  // "X10Y0",
+  // "PAUSE",
+  // "BLACK",
+  // "PAUSE",
+  // "X8Y0",
+  // "X12Y5",
+  // "X5Y5",
+  // "X5Y0",
+  // "HOME"
 };
 int commandCount = sizeof(commands) / sizeof(commands[0]);
 int commandIndex = 0;
@@ -50,8 +74,11 @@ void setup() {
   Serial.begin(9600);
   delay(1000);
 
-  pinMode(stop_switch_pin_x, INPUT);
-  pinMode(stop_switch_pin_y, INPUT);
+  pinMode(stop_switch_pin_x_min, INPUT_PULLUP);
+  pinMode(stop_switch_pin_y_min, INPUT_PULLUP);
+
+  pinMode(stop_switch_pin_x_max, INPUT_PULLUP);
+  pinMode(stop_switch_pin_y_max, INPUT_PULLUP);
 
   pinMode(step_pin_x, OUTPUT);
   pinMode(dir_pin_x, OUTPUT);
@@ -65,8 +92,8 @@ void setup() {
   servoWhite.attach(servoWhitePin);
   servoBlack.attach(servoBlackPin);
 
-  servoWhite.write(SERVO_MAX);
-  servoBlack.write(SERVO_MIN);
+  servoWhite.write(SERVO_MAX_BLACK);
+  servoBlack.write(SERVO_MIN_WHITE);
 
   delay(500);  // wait for servos to initialize
 
@@ -80,26 +107,23 @@ void setup() {
 
 void dispenseWhite() {
   Serial.println("Dispensing white");
-  servoWhite.write(SERVO_MIN);
+  servoWhite.write(SERVO_MIN_WHITE);
   delay(1000);
-  servoWhite.write(SERVO_MAX);
+  servoWhite.write(SERVO_MAX_WHITE);
   delay(1000);
 }
 
 
 void dispenseBlack() {
-  servoBlack.write(SERVO_MAX);
+  Serial.println("Dispensing black");
+  servoBlack.write(SERVO_MAX_BLACK);
   delay(1000);
-  servoBlack.write(SERVO_MIN);
+  servoBlack.write(SERVO_MIN_BLACK);
   delay(1000);
 }
 
 
 void loop() {
-  // // dispenseBlack();
-  // dispenseBlack();
-
-  Serial.println(digitalRead(resume_pin) == LOW ? "PRESSED" : "NOT PRESSED");
   if (!runCommands && Serial.available() > 0) {
     String input = Serial.readStringUntil('\n');
     input.trim();
@@ -110,7 +134,7 @@ void loop() {
     }
   }
 
-    // Check A4 Button START
+  // Check A4 Button START
   if (!runCommands && digitalRead(resume_pin) == LOW) {
     Serial.println("Starting command sequence (A4 pressed)...");
     // Wait for button release to avoid immediate PAUSE trigger later
@@ -125,7 +149,7 @@ void loop() {
     Serial.println(command);
     runCommand(command);
     commandIndex++;
-    delay(1000); // wait a bit between commands
+    delay(1000);  // wait a bit between commands
   } else if (runCommands && commandIndex >= commandCount) {
     Serial.println("All commands done.");
 
@@ -139,20 +163,24 @@ void loop() {
 // ==================== MOVEMENT ====================
 void moveX(int steps, bool direction) {
   digitalWrite(dir_pin_x, direction);
+
   for (int i = 0; i < steps; i++) {
-    digitalWrite(step_pin_x, HIGH);
+    currentX += direction == LOW ? -1 : 1;
+    H(step_pin_x);
     delayMicroseconds(stepDelay);
-    digitalWrite(step_pin_x, LOW);
+    L(step_pin_x);
     delayMicroseconds(stepDelay);
   }
 }
 
 void moveY(int steps, bool direction) {
   digitalWrite(dir_pin_y, direction);
+
   for (int i = 0; i < steps; i++) {
-    digitalWrite(step_pin_y, HIGH);
+    currentX += direction == LOW ? -1 : 1;
+    H(step_pin_y);
     delayMicroseconds(stepDelay);
-    digitalWrite(step_pin_y, LOW);
+    L(step_pin_y);
     delayMicroseconds(stepDelay);
   }
 }
@@ -178,38 +206,103 @@ void moveToTile(int x, int y) {
 
 // ==================== HOMING ====================
 void homeAll() {
-  Serial.println("Homing X...");
 
+  x_max = 0;
+  y_max = 0;
+  Serial.println("HOME_X_MIN...");
   unsigned long startTime = millis();
-  // Home X
-  digitalWrite(dir_pin_x, LOW);                     // move left
-  while (digitalRead(stop_switch_pin_x) == HIGH) {  // HIGH = not pressed (because INPUT_PULLUP)
+
+
+  int home_timeout = 5000;
+
+  while (digitalRead(stop_switch_pin_x_min) == HIGH) {  // HIGH = not pressed (because INPUT_PULLUP)
     moveX(1, LOW);
-    if (millis() - startTime > 10000) {
-      Serial.println("X Homing timeout!");
+    if (millis() - startTime > home_timeout) {
+      Serial.println("HOME_X_MIN timeout!");
       break;
     }
   }
 
 
-  Serial.println("Homing X complete!");
+  // We are at min x, so reset position
+  currentX = 0;
 
-  Serial.println("Homing Y...");
+  Serial.println("HOME_X_MIN complete, resetting currentX!");
+  Serial.println("HOME_X_MAX...");
+  delay(500);
+  startTime = millis();
+
+  while (digitalRead(stop_switch_pin_x_max) == HIGH) {  // HIGH = not pressed (because INPUT_PULLUP)
+    moveX(1, HIGH);
+    x_max += 1;
+    if (millis() - startTime > home_timeout) {
+      Serial.println("HOME_X_MAX timeout!");
+      return;
+    }
+  }
+
+
+  Serial.println("HOME_X_MAX complete!");
+  delay(500);
+  Serial.println("HOME_Y_MIN...");
 
   startTime = millis();
-  // Home Y
-  digitalWrite(dir_pin_y, LOW); // move down
-  while (digitalRead(stop_switch_pin_y) == HIGH) {
+  while (digitalRead(stop_switch_pin_y_min) == HIGH) {
     moveY(1, LOW);
-    if (millis() - startTime > 10000) {
-      Serial.println("Y Homing timeout!");
+    if (millis() - startTime > home_timeout) {
+      Serial.println("HOME_Y_MIN timeout!");
+      return;
       break;
     }
   }
 
-  currentX = 0;
+  // We are at MIN_Y, so reset currentY
   currentY = 0;
-  Serial.println("Home Y complete!");
+
+  Serial.println("HOME_Y_MIN complete, resetting currentY!");
+  delay(500);
+  Serial.println("HOME_Y_MAX...");
+
+
+  startTime = millis();
+  while (digitalRead(stop_switch_pin_y_max) == HIGH) {
+    moveY(1, HIGH);
+    y_max += 1;
+    if (millis() - startTime > home_timeout) {
+      Serial.println("HOME_Y_MAX timeout!");
+      break;
+    }
+  }
+
+
+  Serial.println("HOME_Y_MAX complete!");
+
+  Serial.println("Homing succesful!");
+  Serial.println("X_MAX: " + String(x_max));
+  Serial.println("Y_MAX: " + String(y_max));
+
+  startTime = millis();
+  while (digitalRead(stop_switch_pin_x_min) == HIGH) {  // HIGH = not pressed (because INPUT_PULLUP)
+    moveX(1, LOW);
+    if (millis() - startTime > home_timeout) {
+      Serial.println("HOME_X_MIN timeout!");
+      break;
+    }
+  }
+
+  startTime = millis();
+  while (digitalRead(stop_switch_pin_y_min) == HIGH) {  // HIGH = not pressed (because INPUT_PULLUP)
+    moveY(1, LOW);
+    if (millis() - startTime > home_timeout) {
+      Serial.println("HOME_X_MIN timeout!");
+      break;
+    }
+  }
+
+
+
+  Serial.println("currentX: " + String(currentX));
+  Serial.println("currentY: " + String(currentY));
 }
 
 void runCommand(String command) {
@@ -234,6 +327,10 @@ void runCommand(String command) {
       }
     }
     Serial.println("Completed ROW pattern.");
+  } else if (command == "BLACK") {
+    dispenseBlack();
+  } else if (command == "WHITE") {
+    dispenseWhite();
   } else {
     Serial.println("Unknown command!");
   }
@@ -257,4 +354,17 @@ void handleSerialCommands() {
     String command = Serial.readStringUntil('\n');
     runCommand(command);
   }
+}
+
+
+void H(int pin) {
+  digitalWrite(pin, HIGH);
+}
+
+void L(int pin) {
+  digitalWrite(pin, LOW);
+}
+
+void printCurrentPos() {
+  Serial.println("X: " + String(currentX) + ", Y: " + String(currentY));
 }
