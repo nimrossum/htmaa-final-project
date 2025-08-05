@@ -548,11 +548,11 @@ void drawImage()
     moveToTile(500, 500);
     runCommand("PAUSE");
 
-    moveToTile(x * 2, y * 2 + 2);
+    moveToTile(x, y + 2);
     delay(500);
-    moveToTile(x * 2 + 2, y * 2 + 2);
+    moveToTile(x + 2, y + 2);
     delay(500);
-    moveToTile(x * 2 + 2, 0);
+    moveToTile(x + 2, 0);
     delay(500);
   }
 }
