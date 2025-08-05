@@ -33,8 +33,10 @@
 int currentX = 0;
 int currentY = 0;
 
-int x_max = 0;
-int y_max = 0;
+// int x_max = 0;
+// int y_max = 0;
+int x_max = 985;
+int y_max = 846;
 
 Servo servoWhite;
 Servo servoBlack;
@@ -154,6 +156,9 @@ void loop()
         Serial.println("Starting command sequence...");
         shouldExecuteCommandsAtLaunch = true;
       }
+      else {
+        runCommand(input);
+      }
     }
     // ...or start button press
     if (digitalRead(resume_switch_pin) == LOW)
@@ -225,10 +230,12 @@ void moveToTile(int x, int y)
   currentX = x;
   currentY = y;
 
-  Serial.print("Moved to tile: ");
-  Serial.print(currentX);
-  Serial.print(",");
-  Serial.println(currentY);
+  printCurrentPos();
+
+  // Serial.print("Moved to tile: ");
+  // Serial.print(currentX);
+  // Serial.print(",");
+  // Serial.println(currentY);
 }
 
 // ==================== HOMING ====================
@@ -311,6 +318,8 @@ void homeAll()
   Serial.println("X_MAX: " + String(x_max));
   Serial.println("Y_MAX: " + String(y_max));
 
+  delay(500);
+
   startTime = millis();
   while (digitalRead(stop_switch_pin_x_min) == HIGH)
   { // HIGH = not pressed (because INPUT_PULLUP)
@@ -321,6 +330,8 @@ void homeAll()
       break;
     }
   }
+
+  delay(500);
 
   startTime = millis();
   while (digitalRead(stop_switch_pin_y_min) == HIGH)
