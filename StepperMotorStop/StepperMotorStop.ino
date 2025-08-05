@@ -300,32 +300,18 @@ void homeAll()
   isHomed = true;
   x_max = 0;
   y_max = 0;
-  Serial.println("HOME_X_MIN...");
+  Serial.println("HOME_X_MAX...");
   unsigned long startTime = millis();
 
   int home_timeout = 5000;
+  int pause_delay = 100;
 
-  while (digitalRead(stop_switch_pin_x_min) == HIGH)
-  { // HIGH = not pressed (because INPUT_PULLUP)
-    moveX(1, LOW);
-    if (millis() - startTime > home_timeout)
-    {
-      Serial.println("HOME_X_MIN timeout!");
-      break;
-    }
-  }
-  // We are at min x, so reset position
-  currentX = 0;
-
-  Serial.println("HOME_X_MIN complete, resetting currentX!");
-  Serial.println("HOME_X_MAX...");
-  delay(500);
+  // X_MAX
   startTime = millis();
 
   while (digitalRead(stop_switch_pin_x_max) == HIGH)
   {
     moveX(1, HIGH);
-    x_max += 1; // Increment x_max for each step until we hit the switch
     if (millis() - startTime > home_timeout)
     {
       Serial.println("HOME_X_MAX timeout!");
@@ -334,12 +320,47 @@ void homeAll()
   }
 
   Serial.println("HOME_X_MAX complete!");
-  delay(500);
+  delay(pause_delay);
+  Serial.println("HOME_X_MIN...");
+  startTime = millis();
+
+  while (digitalRead(stop_switch_pin_x_min) == HIGH)
+  {
+    x_max += 1; // Increment x_max for each step until we hit the switch
+    moveX(1, LOW);
+    if (millis() - startTime > home_timeout)
+    {
+      Serial.println("HOME_X_MIN timeout!");
+      break;
+    }
+  }
+  currentX = 0;
+
+  Serial.println("HOME_X_MIN complete!");
+
+  // Y_MAX
+  delay(pause_delay);
+  Serial.println("HOME_Y_MAX...");
+  startTime = millis();
+
+  while (digitalRead(stop_switch_pin_y_max) == HIGH)
+  {
+    moveY(1, HIGH);
+    if (millis() - startTime > home_timeout)
+    {
+      Serial.println("HOME_Y_MAX timeout!");
+      break;
+    }
+  }
+
+  Serial.println("HOME_Y_MAX complete!");
+  delay(100);
   Serial.println("HOME_Y_MIN...");
 
   startTime = millis();
   while (digitalRead(stop_switch_pin_y_min) == HIGH)
   {
+    y_max += 1; // Increment y_max for each step until we hit the switch
     moveY(1, LOW);
     if (millis() - startTime > home_timeout)
     {
@@ -349,60 +370,14 @@ void homeAll()
     }
   }
 
-  // We are at MIN_Y, so reset currentY
   currentY = 0;
 
-  Serial.println("HOME_Y_MIN complete, resetting currentY!");
-  delay(500);
-  Serial.println("HOME_Y_MAX...");
-
-  startTime = millis();
-  while (digitalRead(stop_switch_pin_y_max) == HIGH)
-  {
-    moveY(1, HIGH);
-    y_max += 1; // Increment y_max for each step until we hit the switch
-    if (millis() - startTime > home_timeout)
-    {
-      Serial.println("HOME_Y_MAX timeout!");
-      break;
-    }
-  }
-
-  Serial.println("HOME_Y_MAX complete!");
-
+  Serial.println("HOME_Y complete");
+  delay(pause_delay);
   Serial.println("Homing succesful!");
+
   Serial.println("X_MAX: " + String(x_max));
   Serial.println("Y_MAX: " + String(y_max));
-
-  delay(500);
-
-  startTime = millis();
-  while (digitalRead(stop_switch_pin_x_min) == HIGH)
-  { // HIGH = not pressed (because INPUT_PULLUP)
-    moveX(1, LOW);
-    if (millis() - startTime > home_timeout)
-    {
-      Serial.println("HOME_X_MIN timeout!");
-      break;
-    }
-  }
-
-  delay(500);
-
-  startTime = millis();
-  while (digitalRead(stop_switch_pin_y_min) == HIGH)
-  { // HIGH = not pressed (because INPUT_PULLUP)
-    moveY(1, LOW);
-    if (millis() - startTime > home_timeout)
-    {
-      Serial.println("HOME_X_MIN timeout!");
-      break;
-    }
-  }
-
-  currentX = 0;
-  currentY = 0;
-
   Serial.println("currentX: " + String(currentX));
   Serial.println("currentY: " + String(currentY));
 }
