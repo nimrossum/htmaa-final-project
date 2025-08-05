@@ -16,7 +16,8 @@
 #define dir_pin_y 6
 #define step_pin_y 7
 
-#define stepDelay 800 // microseconds (movement speed
+#define stepDelay 1000 // microseconds (movement speed
+// #define stepDelay 800 // microseconds (movement speed
 
 // TODO: Calibrate this:
 #define stepsPerTile 46 // steps for one tile distanc
@@ -24,11 +25,11 @@
 #define servoWhitePin 11
 #define servoBlackPin 10
 
-#define SERVO_MAX_BLACK 0
-#define SERVO_MIN_BLACK 178
+#define SERVO_MAX_BLACK 39
+#define SERVO_MIN_BLACK 149
 
-#define SERVO_MAX_WHITE 0
-#define SERVO_MIN_WHITE 178
+#define SERVO_MAX_WHITE 30
+#define SERVO_MIN_WHITE 140
 
 int currentX = 0;
 int currentY = 0;
@@ -45,7 +46,15 @@ Servo servoBlack;
 
 String commands[] = {
     "HOME",
-    "X1Y1",
+    "X0Y50",
+    "BLACK",
+    "WHITE",
+    "RX0Y1",
+    "RX0Y-4",
+    "BLACK",
+    "WHITE",
+    "RX0Y1",
+    "RX0Y-4",
     // "HOME",
     // "PAUSE",
     // "HOME",
@@ -153,7 +162,7 @@ void loop()
       String input = Serial.readStringUntil('\n');
       input.trim();
       input.toUpperCase();
-      if (input == "START")
+      if (input == "START" || input == "RUN")
       {
         Serial.println("Starting command sequence...");
         shouldExecuteCommandsAtLaunch = true;
@@ -254,6 +263,35 @@ void moveToTile(int x, int y)
   // Serial.print(currentX);
   // Serial.print(",");
   // Serial.println(currentY);
+}
+
+void moveRelativeTile(int dx, int dy)
+{
+  if (!isHomed)
+  {
+    Serial.println("Not homed! Please home first.");
+    return;
+  }
+
+  Serial.print("Moving relative: dx=");
+  Serial.print(dx);
+  Serial.print(", dy=");
+  Serial.println(dy);
+
+  if (dx > 0)
+    moveX(dx * stepsPerTile, HIGH);
+  else if (dx < 0)
+    moveX(-dx * stepsPerTile, LOW);
+
+  if (dy > 0)
+    moveY(dy * stepsPerTile, HIGH);
+  else if (dy < 0)
+    moveY(-dy * stepsPerTile, LOW);
+
+  currentX += dx;
+  currentY += dy;
+
+  printCurrentPos();
 }
 
 // ==================== HOMING ====================
@@ -374,27 +412,37 @@ void runCommand(String command)
   command.trim();
   command.toUpperCase();
 
-  if (command == "HOME")
+  if (command == "HOME" || command == "H")
   {
     homeAll();
   }
-  else if (command == "PAUSE")
+  else if (command == "PAUSE" || command == "P")
   {
     waitForResume();
   }
+  else if (command.startsWith("RX") && command.indexOf("Y") != -1)
+  {
+    // Relative movement command: RX{int}Y{int}
+    int xIndex = 2; // Skip "RX"
+    int yIndex = command.indexOf("Y") + 1;
+    int dx = command.substring(xIndex, command.indexOf("Y")).toInt();
+    int dy = command.substring(yIndex).toInt();
+    moveRelativeTile(dx, dy);
+  }
   else if (command.startsWith("X") && command.indexOf("Y") != -1)
   {
+    // Absolute movement command: X{int}Y{int}
     int xIndex = 1;
     int yIndex = command.indexOf("Y") + 1;
     int x = command.substring(xIndex, command.indexOf("Y")).toInt();
     int y = command.substring(yIndex).toInt();
     moveToTile(x, y);
   }
-  else if (command == "BLACK")
+  else if (command == "BLACK" || command == "B")
   {
     dispenseBlack();
   }
-  else if (command == "WHITE")
+  else if (command == "WHITE" || command == "W")
   {
     dispenseWhite();
   }
