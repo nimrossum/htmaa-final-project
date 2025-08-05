@@ -31,6 +31,11 @@
 #define SERVO_MAX_WHITE 30
 #define SERVO_MIN_WHITE 140
 
+#define RETRACT_AMOUNT 3 // tiles to retract before dispensing
+
+#define B 0;
+#define W 1;
+
 bool isHomed = LOW;
 
 int currentX = 0;
@@ -48,20 +53,20 @@ Servo servoWhite;
 
 // 3x3 test image
 const int IMAGE_TO_DRAW[3][3] = {
-    {1, 1, 1},
-    {1, 0, 0},
-    {1, 0, 0}};
+    {W, W, W},
+    {W, B, B},
+    {W, B, B}};
 
 // Smiley face image
 // const int IMAGE_TO_DRAW[8][8] = {
-//     {0, 0, 0, 0, 0, 0, 0, 0},
-//     {0, 0, 1, 0, 0, 1, 0, 0},
-//     {0, 0, 1, 0, 0, 1, 0, 0},
-//     {0, 0, 1, 0, 0, 1, 0, 0},
-//     {1, 0, 0, 0, 0, 0, 0, 1},
-//     {1, 1, 0, 0, 0, 0, 1, 1},
-//     {0, 1, 1, 0, 0, 1, 1, 0},
-//     {0, 0, 1, 1, 1, 1, 0, 0}};
+//     {B, B, B, B, B, B, B, B},
+//     {B, B, W, B, B, W, B, B},
+//     {B, B, W, B, B, W, B, B},
+//     {B, B, W, B, B, W, B, B},
+//     {W, B, B, B, B, B, B, W},
+//     {W, W, B, B, B, B, W, W},
+//     {B, W, W, B, B, W, W, B},
+//     {B, B, W, W, W, W, B, B}};
 
 String commands[] = {
     "DRAW"};
@@ -108,7 +113,7 @@ void setup()
   Serial.println("System Ready. Send commands: " + cmds);
 }
 
-void dispenseBlack()
+void dispenseBlack(int nextTileColor)
 {
   if (blackTilesRemaining <= 0)
   {
@@ -305,6 +310,7 @@ void moveToTile(int x, int y)
   currentY = y;
 
   printCurrentPos();
+  delay(500);
 }
 
 void moveRelativeTile(int dx, int dy)
@@ -516,7 +522,6 @@ void drawImage()
   if (!isHomed)
   {
     runCommand("HOME");
-    delay(1000);
   }
   else
   {
@@ -530,10 +535,14 @@ void drawImage()
     for (int x = 0; x < TILE_WIDTH; x++)
     {
       int currentTileColor = IMAGE_TO_DRAW[x][y];
-      int nextTileColor = IMAGE_TO_DRAW[x + 1][y];
+      int nextTileColor = (x + 1 < TILE_WIDTH)
+                              ? IMAGE_TO_DRAW[x + 1][y]
+                              // If we are at the last tile in the row, assume white (no movement needed)
+                              : W;
 
-      moveToTile(x + 3, y + 3);
-      if (currentTileColor == 0)
+      // Retract and dispense
+      moveToTile(x + RETRACT_AMOUNT, y + RETRACT_AMOUNT);
+      if (currentTileColor == B)
       {
         dispenseBlack(nextTileColor);
       }
@@ -541,18 +550,13 @@ void drawImage()
       {
         dispenseWhite();
       }
+      // Push into place
       moveToTile(x, y);
+      moveToTile(x + RETRACT_AMOUNT, y + RETRACT_AMOUNT);
     }
-    delay(1000);
-
-    moveToTile(500, 500);
-    runCommand("PAUSE");
-
-    moveToTile(x, y + 2);
-    delay(500);
-    moveToTile(x + 2, y + 2);
-    delay(500);
-    moveToTile(x + 2, 0);
-    delay(500);
+    // After each row, retract to avoid pushing the tiles out of place
+    moveToTile(x + RETRACT_AMOUNT, y + RETRACT_AMOUNT);
+    // Move to next row, ready for the next iteration
+    moveToTile(RETRACT_AMOUNT, y + RETRACT_AMOUNT);
   }
 }
