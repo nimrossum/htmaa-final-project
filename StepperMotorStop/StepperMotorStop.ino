@@ -48,6 +48,23 @@ int blackTilesRemaining = 19; // Initialize with starting count
 Servo servoWhite;
 Servo servoBlack;
 
+// 3x3 test image
+const int imageToDraw[3][3] = {
+    {1, 1, 1},
+    {1, 0, 0},
+    {1, 0, 0}};
+
+// Smiley face image
+// const int imageToDraw[8][8] = {
+//     {0, 0, 0, 0, 0, 0, 0, 0},
+//     {0, 0, 1, 0, 0, 1, 0, 0},
+//     {0, 0, 1, 0, 0, 1, 0, 0},
+//     {0, 0, 1, 0, 0, 1, 0, 0},
+//     {1, 0, 0, 0, 0, 0, 0, 1},
+//     {1, 1, 0, 0, 0, 0, 1, 1},
+//     {0, 1, 1, 0, 0, 1, 1, 0},
+//     {0, 0, 1, 1, 1, 1, 0, 0}};
+
 String commands[] = {
     "DRAW"};
 
@@ -488,12 +505,14 @@ void drawImage()
     moveToTile(0, 0);
   }
   int y = 0;
+  int TILE_WIDTH = sizeof(imageToDraw[0]) / sizeof(imageToDraw[0][0]);
+  int TILE_HEIGHT = sizeof(imageToDraw) / sizeof(imageToDraw[0]);
   for (int x = 0; x < TILE_WIDTH; x++)
   {
     for (y = 0; y < TILE_HEIGHT; y++)
     {
       moveToTile(x * 2 + 3, y + 3);
-      if (robotTileData[y][x] == 0)
+      if (imageToDraw[y][x] == 0)
       {
         dispenseWhite();
       }
