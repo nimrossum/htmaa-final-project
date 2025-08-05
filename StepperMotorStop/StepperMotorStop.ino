@@ -38,6 +38,8 @@ int currentY = 0;
 int x_max = 985;
 int y_max = 846;
 
+bool isHomed = LOW;
+
 Servo servoWhite;
 Servo servoBlack;
 
@@ -156,7 +158,8 @@ void loop()
         Serial.println("Starting command sequence...");
         shouldExecuteCommandsAtLaunch = true;
       }
-      else {
+      else
+      {
         runCommand(input);
       }
     }
@@ -178,6 +181,11 @@ void loop()
 // ==================== MOVEMENT ====================
 bool moveX(int steps, bool direction)
 {
+  if (!isHomed)
+  {
+    Serial.println("Not homed! Please home first.");
+    return false;
+  }
   digitalWrite(dir_pin_x, direction);
 
   for (int i = 0; i < steps; i++)
@@ -196,6 +204,11 @@ bool moveX(int steps, bool direction)
 
 bool moveY(int steps, bool direction)
 {
+  if (!isHomed)
+  {
+    Serial.println("Not homed! Please home first.");
+    return false;
+  }
   digitalWrite(dir_pin_y, direction);
 
   for (int i = 0; i < steps; i++)
@@ -214,6 +227,11 @@ bool moveY(int steps, bool direction)
 
 void moveToTile(int x, int y)
 {
+  if (!isHomed)
+  {
+    Serial.println("Not homed! Please home first.");
+    return;
+  }
   int dx = x - currentX;
   int dy = y - currentY;
 
@@ -241,7 +259,7 @@ void moveToTile(int x, int y)
 // ==================== HOMING ====================
 void homeAll()
 {
-
+  isHomed = true;
   x_max = 0;
   y_max = 0;
   Serial.println("HOME_X_MIN...");
@@ -343,6 +361,9 @@ void homeAll()
       break;
     }
   }
+
+  currentX = 0;
+  currentY = 0;
 
   Serial.println("currentX: " + String(currentX));
   Serial.println("currentY: " + String(currentY));
