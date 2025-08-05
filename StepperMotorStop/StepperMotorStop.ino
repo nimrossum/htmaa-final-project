@@ -421,6 +421,10 @@ void runCommand(String command)
   {
     dispenseWhite();
   }
+  else if (command == "DRAW" || command == "D")
+  {
+    drawImage();
+  }
   else
   {
     Serial.println("Unknown command!");
@@ -472,4 +476,45 @@ void step(int pin)
   delayMicroseconds(stepDelay);
   L(pin);
   delayMicroseconds(stepDelay);
+}
+
+void drawImage()
+{
+  if (!isHomed)
+  {
+    runCommand("HOME");
+    delay(1000);
+  }
+  else
+  {
+    moveToTile(0, 0);
+  }
+  int y = 0;
+  for (int x = 0; x < TILE_WIDTH; x++)
+  {
+    for (y = 0; y < TILE_HEIGHT; y++)
+    {
+      moveToTile(x * 2 + 3, y + 3);
+      if (robotTileData[y][x] == 0)
+      {
+        dispenseWhite();
+      }
+      else
+      {
+        dispenseBlack();
+      }
+      moveToTile(x, y);
+    }
+    delay(1000);
+
+    moveToTile(500, 500);
+    runCommand("PAUSE");
+
+    moveToTile(x * 2, y * 2 + 2);
+    delay(500);
+    moveToTile(x * 2 + 2, y * 2 + 2);
+    delay(500);
+    moveToTile(x * 2 + 2, 0);
+    delay(500);
+  }
 }
