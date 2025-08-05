@@ -19,7 +19,7 @@
 #define stepDelay 800 // microseconds (movement speed
 
 // TODO: Calibrate this:
-#define stepsPerTile 80 // steps for one tile distanc
+#define stepsPerTile 46 // steps for one tile distanc
 
 #define servoWhitePin 11
 #define servoBlackPin 10
