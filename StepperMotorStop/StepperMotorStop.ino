@@ -41,6 +41,10 @@ int y_max = 844;
 
 bool isHomed = LOW;
 
+// Tile dispenser counters
+int whiteTilesRemaining = 19; // Initialize with starting count
+int blackTilesRemaining = 19; // Initialize with starting count
+
 Servo servoWhite;
 Servo servoBlack;
 
@@ -118,6 +122,14 @@ void setup()
 
 void dispenseWhite()
 {
+  if (whiteTilesRemaining <= 0)
+  {
+    Serial.println("Please refill white tiles!");
+    Serial.println("Press button to continue!");
+    runCommand("PAUSE");
+    return;
+  }
+  whiteTilesRemaining--;
   Serial.println("Dispensing white");
   servoWhite.write(SERVO_MIN_WHITE);
   delay(1000);
@@ -127,6 +139,14 @@ void dispenseWhite()
 
 void dispenseBlack()
 {
+  if (blackTilesRemaining <= 0)
+  {
+    Serial.println("Please refill black tiles!");
+    Serial.println("Press button to continue!");
+    runCommand("PAUSE");
+    return;
+  }
+  blackTilesRemaining--;
   Serial.println("Dispensing black");
   servoBlack.write(SERVO_MAX_BLACK);
   delay(1000);
