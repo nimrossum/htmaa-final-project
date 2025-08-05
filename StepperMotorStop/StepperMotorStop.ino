@@ -36,8 +36,8 @@ int currentY = 0;
 
 // int x_max = 0;
 // int y_max = 0;
-int x_max = 985;
-int y_max = 846;
+int x_max = 925;
+int y_max = 844;
 
 bool isHomed = LOW;
 
