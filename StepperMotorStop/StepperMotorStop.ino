@@ -249,6 +249,44 @@ bool moveY(int steps, bool direction)
   return LOW;
 }
 
+bool moveXY(int stepsX, int stepsY, bool directionX, bool directionY)
+{
+  if (!isHomed)
+  {
+    Serial.println("Not homed! Please home first.");
+    return false;
+  }
+
+  digitalWrite(dir_pin_x, directionX);
+  digitalWrite(dir_pin_y, directionY);
+
+  // Interleave steps in x and y directions
+  int maxSteps = max(stepsX, stepsY);
+  for (int i = 0; i < maxSteps; i++)
+  {
+    if (i < stepsX)
+    {
+      if (digitalRead(directionX == LOW ? stop_switch_pin_x_min : stop_switch_pin_x_max) == LOW)
+      {
+        return HIGH;
+      }
+      currentX += (directionX == LOW ? -1 : 1);
+      step(step_pin_x);
+    }
+
+    if (i < stepsY)
+    {
+      if (digitalRead(directionY == LOW ? stop_switch_pin_y_min : stop_switch_pin_y_max) == LOW)
+      {
+        return HIGH;
+      }
+      currentY += (directionY == LOW ? -1 : 1);
+      step(step_pin_y);
+    }
+  }
+  return LOW;
+}
+
 void moveToTile(int x, int y)
 {
   if (!isHomed)
@@ -258,16 +296,12 @@ void moveToTile(int x, int y)
   }
   int dx = x - currentX;
   int dy = y - currentY;
+  int stepsX = abs(dx) * stepsPerTile;
+  int stepsY = abs(dy) * stepsPerTile;
+  bool directionX = (dx > 0) ? HIGH : LOW;
+  bool directionY = (dy > 0) ? HIGH : LOW;
 
-  if (dx > 0)
-    moveX(dx * stepsPerTile, HIGH);
-  else if (dx < 0)
-    moveX(-dx * stepsPerTile, LOW);
-
-  if (dy > 0)
-    moveY(dy * stepsPerTile, HIGH);
-  else if (dy < 0)
-    moveY(-dy * stepsPerTile, LOW);
+  moveXY(stepsX, stepsY, directionX, directionY);
 
   currentX = x;
   currentY = y;
