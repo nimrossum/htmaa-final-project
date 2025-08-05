@@ -130,11 +130,16 @@ void dispenseWhite()
     return;
   }
   whiteTilesRemaining--;
+  int blackVsWhiteDist = 1.45 * stepsPerTile;
+  moveY(blackVsWhiteDist, HIGH);
   Serial.println("Dispensing white");
   servoWhite.write(SERVO_MIN_WHITE);
   delay(1000);
   servoWhite.write(SERVO_MAX_WHITE);
   delay(1000);
+  // TODO: Optimize this, if two white tiles are placed consecutively
+  moveY(blackVsWhiteDist, LOW);
+  delay(300);
 }
 
 void dispenseBlack()
