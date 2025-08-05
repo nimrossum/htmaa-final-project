@@ -49,34 +49,7 @@ Servo servoWhite;
 Servo servoBlack;
 
 String commands[] = {
-    "HOME",
-    "X0Y50",
-    "BLACK",
-    "WHITE",
-    "RX0Y1",
-    "RX0Y-4",
-    "BLACK",
-    "WHITE",
-    "RX0Y1",
-    "RX0Y-4",
-    // "HOME",
-    // "PAUSE",
-    // "HOME",
-    // "PAUSE",
-    // "BLACK",
-    // "WHITE"
-    // "HOME",
-    // "PAUSE",
-    // "X10Y0",
-    // "PAUSE",
-    // "BLACK",
-    // "PAUSE",
-    // "X8Y0",
-    // "X12Y5",
-    // "X5Y5",
-    // "X5Y0",
-    // "HOME"
-};
+    "DRAW"};
 
 int commandCount = sizeof(commands) / sizeof(commands[0]);
 int commandIndex = 0;
