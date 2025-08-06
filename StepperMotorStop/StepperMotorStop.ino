@@ -34,6 +34,12 @@
 #define B 0
 #define W 1
 
+// Enable to track remaining tiles and pause if they run out
+#define TRACK_REMAINING_TILES true
+
+#define TILE_CAPACITY 10
+// #define TILE_CAPACITY 19
+
 bool isHomed = false;
 
 int currentX = 0;
@@ -43,28 +49,31 @@ int maxX = 925;
 int maxY = 844;
 
 // Tile dispenser counters
-int blackTilesRemaining = 19; // Initialize with starting count
-int whiteTilesRemaining = 19; // Initialize with starting count
+int blackTilesRemaining = TILE_CAPACITY; // Initialize with starting count
+int whiteTilesRemaining = TILE_CAPACITY; // Initialize with starting count
 
 Servo servoBlack;
 Servo servoWhite;
 
 // 3x3 test image
-const int IMAGE_TO_DRAW[3][3] = {
-    {W, W, W},
-    {W, B, B},
-    {W, B, B}};
+// const int IMAGE_TO_DRAW[1][1] = {
+//     {W}};
+
+// Checkerpattern
+// const int IMAGE_TO_DRAW[4][4] = {
+//     {B, W, B, W},
+//     {W, B, W, B},
+//     {B, W, B, W},
+//     {W, B, W, B}};
 
 // Smiley face image
-// const int IMAGE_TO_DRAW[8][8] = {
-//     {B, B, B, B, B, B, B, B},
-//     {B, B, W, B, B, W, B, B},
-//     {B, B, W, B, B, W, B, B},
-//     {B, B, W, B, B, W, B, B},
-//     {W, B, B, B, B, B, B, W},
-//     {W, W, B, B, B, B, W, W},
-//     {B, W, W, B, B, W, W, B},
-//     {B, B, W, W, W, W, B, B}};
+const int IMAGE_TO_DRAW[6][6] = {
+    {W, W, W, W, W, W},
+    {W, B, W, W, B, W},
+    {W, W, W, W, W, W},
+    {B, W, W, W, W, B},
+    {W, B, B, B, B, W},
+    {W, W, W, W, W, W}};
 
 String commands[] = {
     "DRAW"};
@@ -108,7 +117,7 @@ void setup()
     if (i < commandCount - 1)
       cmds += ", ";
   }
-  Serial.println("System Ready. Send commands: " + cmds);
+  Serial.println("Ready. Press blue button to run predefined commands: " + cmds);
 }
 
 void dispenseBlack(int nextTileColor)
@@ -118,14 +127,17 @@ void dispenseBlack(int nextTileColor)
     Serial.println("Not homed! Please home first.");
     return;
   }
-  if (blackTilesRemaining <= 0)
+  if (TRACK_REMAINING_TILES)
   {
-    Serial.println("Please refill white tiles!");
-    Serial.println("Press button to continue!");
-    runCommand("PAUSE");
-    return;
+    if (blackTilesRemaining <= 0)
+    {
+      Serial.println("Please refill tiles!");
+      runCommand("PAUSE");
+      blackTilesRemaining = TILE_CAPACITY;
+      whiteTilesRemaining = TILE_CAPACITY;
+    }
+    blackTilesRemaining--;
   }
-  blackTilesRemaining--;
   int blackVsWhiteDist = 1.45 * STEPS_PER_TILE;
   moveX(blackVsWhiteDist, HIGH);
   Serial.println("Dispensing white");
@@ -140,12 +152,15 @@ void dispenseBlack(int nextTileColor)
 
 void dispenseWhite()
 {
-  if (whiteTilesRemaining <= 0)
+  if (TRACK_REMAINING_TILES)
   {
-    Serial.println("Please refill black tiles!");
-    Serial.println("Press button to continue!");
-    runCommand("PAUSE");
-    return;
+    if (whiteTilesRemaining <= 0)
+    {
+      Serial.println("Please refill tiles!");
+      runCommand("PAUSE");
+      blackTilesRemaining = TILE_CAPACITY;
+      whiteTilesRemaining = TILE_CAPACITY;
+    }
   }
   whiteTilesRemaining--;
   Serial.println("Dispensing black");
@@ -365,11 +380,6 @@ void moveToTile(int x, int y)
   bool directionX = (dx > 0) ? HIGH : LOW;
   bool directionY = (dy > 0) ? HIGH : LOW;
 
-  Serial.println("Moving to tile: x=" + String(x) + ", y=" + String(y));
-  Serial.println("Max dimensions: X=" + String(maxX) + ", Y=" + String(maxY));
-  Serial.println("Steps per tile: X=" + String(actualStepsPerTileX) + ", Y=" + String(actualStepsPerTileY));
-  Serial.println("Target steps: X=" + String(targetStepsX) + ", Y=" + String(targetStepsY));
-  Serial.println("Movement steps: X=" + String(stepsX) + ", Y=" + String(stepsY));
   moveXY(stepsX, stepsY, directionX, directionY);
 
   // Update current position to actual target (not tile position)
@@ -387,9 +397,9 @@ void moveRelativeTile(int dx, int dy)
     return;
   }
 
-  Serial.print("Moving relative: dx=");
+  Serial.print("DX=");
   Serial.print(dx);
-  Serial.print(", dy=");
+  Serial.print(", DY=");
   Serial.println(dy);
 
   // Calculate actual steps per tile based on measured dimensions
@@ -418,7 +428,7 @@ void homeAll()
   isHomed = true;
   maxX = 0;
   maxY = 0;
-  Serial.println("HOME_X_MAX...");
+  Serial.println("HOME_X...");
   unsigned long startTime = millis();
 
   int HOME_TIMEOUT = 5000;
@@ -437,9 +447,7 @@ void homeAll()
     }
   }
 
-  Serial.println("HOME_X_MAX complete!");
   delay(PAUSE_DELAY);
-  Serial.println("HOME_X_MIN...");
   startTime = millis();
 
   while (digitalRead(STOP_SWITCH_PIN_X_MIN) == HIGH)
@@ -454,11 +462,11 @@ void homeAll()
   }
   currentX = 0;
 
-  Serial.println("HOME_X_MIN complete!");
+  Serial.println("HOME_X complete!");
 
   // Y_MAX
   delay(PAUSE_DELAY);
-  Serial.println("HOME_Y_MAX...");
+  Serial.println("HOME_Y...");
   startTime = millis();
 
   while (digitalRead(STOP_SWITCH_PIN_Y_MAX) == HIGH)
@@ -471,9 +479,7 @@ void homeAll()
     }
   }
 
-  Serial.println("HOME_Y_MAX complete!");
   delay(100);
-  Serial.println("HOME_Y_MIN...");
 
   startTime = millis();
   while (digitalRead(STOP_SWITCH_PIN_Y_MIN) == HIGH)
@@ -505,13 +511,13 @@ void runCommand(String command)
   command.trim();
   command.toUpperCase();
 
-  if (command == "HOME" || command == "H")
-  {
-    homeAll();
-  }
-  else if (command == "PAUSE" || command == "P")
+  if (command == "PAUSE" || command == "P")
   {
     waitForResume();
+  }
+  else if (command == "HOME" || command == "H")
+  {
+    homeAll();
   }
   else if (command.startsWith("RX") && command.indexOf("Y") != -1)
   {
@@ -593,10 +599,9 @@ void drawImage()
   {
     runCommand("HOME");
   }
-  else
-  {
-    moveToTile(0, 0);
-  }
+
+  int startTime = millis();
+  moveToTile(0, 0);
   int x = 0;
   int y = 0;
   int TILE_WIDTH = sizeof(IMAGE_TO_DRAW[0]) / sizeof(IMAGE_TO_DRAW[0][0]);
@@ -605,6 +610,10 @@ void drawImage()
   {
     for (x = 0; x < TILE_WIDTH; x++)
     {
+      if (digitalRead(RESUME_SWITCH_PIN) == LOW)
+      {
+        runCommand("PAUSE");
+      } 
       int currentTileColor = IMAGE_TO_DRAW[x][y];
       int nextTileColor = (x + 1 < TILE_WIDTH)
                               ? IMAGE_TO_DRAW[x + 1][y]
@@ -630,4 +639,18 @@ void drawImage()
     // Move to next row, ready for the next iteration
     moveToTile(RETRACT_AMOUNT, y + RETRACT_AMOUNT);
   }
+  unsigned long elapsedMillis = millis() - startTime;
+  unsigned long totalSeconds = elapsedMillis / 1000;
+
+  int hours = totalSeconds / 3600;
+  int minutes = (totalSeconds % 3600) / 60;
+  int seconds = totalSeconds % 60;
+
+  char buffer[12];
+  sprintf(buffer, "%02d.%02d.%02d", hours, minutes, seconds);
+
+  Serial.print("Image drawn in ");
+  Serial.println(buffer);
+
+  moveToTile(50, 50);
 }
