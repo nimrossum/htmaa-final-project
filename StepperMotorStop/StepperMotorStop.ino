@@ -115,6 +115,11 @@ void setup()
 
 void dispenseBlack(int nextTileColor)
 {
+  if (!isHomed)
+  {
+    Serial.println("Not homed! Please home first.");
+    return;
+  }
   if (blackTilesRemaining <= 0)
   {
     Serial.println("Please refill white tiles!");
@@ -124,14 +129,14 @@ void dispenseBlack(int nextTileColor)
   }
   blackTilesRemaining--;
   int blackVsWhiteDist = 1.45 * STEPS_PER_TILE;
-  moveY(blackVsWhiteDist, HIGH);
+  moveX(blackVsWhiteDist, HIGH);
   Serial.println("Dispensing white");
   servoWhite.write(SERVO_MIN_WHITE);
   delay(1000);
   servoWhite.write(SERVO_MAX_WHITE);
   delay(1000);
   // TODO: Optimize this, if two white tiles are placed consecutively
-  moveY(blackVsWhiteDist, LOW);
+  moveX(blackVsWhiteDist, LOW);
   delay(300);
 }
 
@@ -312,7 +317,6 @@ void moveToTile(int x, int y)
   printCurrentPos();
   delay(500);
 }
-
 void moveRelativeTile(int dx, int dy)
 {
   if (!isHomed)
@@ -326,15 +330,12 @@ void moveRelativeTile(int dx, int dy)
   Serial.print(", dy=");
   Serial.println(dy);
 
-  if (dx > 0)
-    moveX(dx * STEPS_PER_TILE, HIGH);
-  else if (dx < 0)
-    moveX(-dx * STEPS_PER_TILE, LOW);
+  int stepsX = abs(dx) * STEPS_PER_TILE;
+  int stepsY = abs(dy) * STEPS_PER_TILE;
+  bool directionX = (dx > 0) ? HIGH : LOW;
+  bool directionY = (dy > 0) ? HIGH : LOW;
 
-  if (dy > 0)
-    moveY(dy * STEPS_PER_TILE, HIGH);
-  else if (dy < 0)
-    moveY(-dy * STEPS_PER_TILE, LOW);
+  moveXY(stepsX, stepsY, directionX, directionY);
 
   currentX += dx;
   currentY += dy;
