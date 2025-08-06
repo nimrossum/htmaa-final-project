@@ -265,29 +265,71 @@ bool moveXY(int stepsX, int stepsY, bool directionX, bool directionY)
   digitalWrite(DIR_PIN_X, directionX);
   digitalWrite(DIR_PIN_Y, directionY);
 
-  // Interleave steps in x and y directions
+  // Use Bresenham-like algorithm for smooth diagonal movement
   int maxSteps = max(stepsX, stepsY);
+  int errorX = maxSteps / 2;
+  int errorY = maxSteps / 2;
+  int stepsRemainingX = stepsX;
+  int stepsRemainingY = stepsY;
+
   for (int i = 0; i < maxSteps; i++)
   {
-    if (i < stepsX)
+    bool stepX = false;
+    bool stepY = false;
+
+    // Determine which motors should step this iteration
+    if (stepsRemainingX > 0)
     {
-      if (digitalRead(directionX == LOW ? STOP_SWITCH_PIN_X_MIN : STOP_SWITCH_PIN_X_MAX) == LOW)
+      errorX -= stepsX;
+      if (errorX < 0)
       {
-        return HIGH;
+        errorX += maxSteps;
+        stepX = true;
+        stepsRemainingX--;
       }
-      currentX += (directionX == LOW ? -1 : 1);
-      step(STEP_PIN_X);
     }
 
-    if (i < stepsY)
+    if (stepsRemainingY > 0)
     {
-      if (digitalRead(directionY == LOW ? STOP_SWITCH_PIN_Y_MIN : STOP_SWITCH_PIN_Y_MAX) == LOW)
+      errorY -= stepsY;
+      if (errorY < 0)
       {
-        return HIGH;
+        errorY += maxSteps;
+        stepY = true;
+        stepsRemainingY--;
       }
-      currentY += (directionY == LOW ? -1 : 1);
-      step(STEP_PIN_Y);
     }
+
+    // Check limit switches before stepping
+    if (stepX && digitalRead(directionX == LOW ? STOP_SWITCH_PIN_X_MIN : STOP_SWITCH_PIN_X_MAX) == LOW)
+    {
+      return HIGH;
+    }
+    if (stepY && digitalRead(directionY == LOW ? STOP_SWITCH_PIN_Y_MIN : STOP_SWITCH_PIN_Y_MAX) == LOW)
+    {
+      return HIGH;
+    }
+
+    // Pulse both motors simultaneously
+    if (stepX)
+      digitalWrite(STEP_PIN_X, HIGH);
+    if (stepY)
+      digitalWrite(STEP_PIN_Y, HIGH);
+
+    delayMicroseconds(STEP_DELAY);
+
+    if (stepX)
+      digitalWrite(STEP_PIN_X, LOW);
+    if (stepY)
+      digitalWrite(STEP_PIN_Y, LOW);
+
+    delayMicroseconds(STEP_DELAY);
+
+    // Update position counters
+    if (stepX)
+      currentX += (directionX == LOW ? -1 : 1);
+    if (stepY)
+      currentY += (directionY == LOW ? -1 : 1);
   }
 
   return LOW;
@@ -300,19 +342,39 @@ void moveToTile(int x, int y)
     Serial.println("Not homed! Please home first.");
     return;
   }
-  int dx = x - currentX;
-  int dy = y - currentY;
-  int stepsX = abs(dx) * STEPS_PER_TILE;
-  int stepsY = abs(dy) * STEPS_PER_TILE;
+
+  // Calculate actual steps per tile based on measured dimensions
+  // Assuming the work area has a certain number of tiles that fit in maxX/maxY
+  // If you know how many tiles fit, adjust these divisors accordingly
+  int tilesInX = maxX / STEPS_PER_TILE; // Number of tiles that fit in X direction
+  int tilesInY = maxY / STEPS_PER_TILE; // Number of tiles that fit in Y direction
+
+  // Calculate actual steps per tile
+  int actualStepsPerTileX = (tilesInX > 0) ? maxX / tilesInX : STEPS_PER_TILE;
+  int actualStepsPerTileY = (tilesInY > 0) ? maxY / tilesInY : STEPS_PER_TILE;
+
+  // Calculate target position in steps
+  int targetStepsX = x * actualStepsPerTileX;
+  int targetStepsY = y * actualStepsPerTileY;
+
+  // Calculate movement needed
+  int dx = targetStepsX - currentX;
+  int dy = targetStepsY - currentY;
+  int stepsX = abs(dx);
+  int stepsY = abs(dy);
   bool directionX = (dx > 0) ? HIGH : LOW;
   bool directionY = (dy > 0) ? HIGH : LOW;
 
   Serial.println("Moving to tile: x=" + String(x) + ", y=" + String(y));
-  Serial.println("using stepsX=" + String(stepsX) + ", stepsY=" + String(stepsY));
+  Serial.println("Max dimensions: X=" + String(maxX) + ", Y=" + String(maxY));
+  Serial.println("Steps per tile: X=" + String(actualStepsPerTileX) + ", Y=" + String(actualStepsPerTileY));
+  Serial.println("Target steps: X=" + String(targetStepsX) + ", Y=" + String(targetStepsY));
+  Serial.println("Movement steps: X=" + String(stepsX) + ", Y=" + String(stepsY));
   moveXY(stepsX, stepsY, directionX, directionY);
 
-  currentX = x;
-  currentY = y;
+  // Update current position to actual target (not tile position)
+  currentX = targetStepsX;
+  currentY = targetStepsY;
 
   printCurrentPos();
   delay(500);
@@ -330,15 +392,22 @@ void moveRelativeTile(int dx, int dy)
   Serial.print(", dy=");
   Serial.println(dy);
 
-  int stepsX = abs(dx) * STEPS_PER_TILE;
-  int stepsY = abs(dy) * STEPS_PER_TILE;
+  // Calculate actual steps per tile based on measured dimensions
+  int tilesInX = maxX / STEPS_PER_TILE;
+  int tilesInY = maxY / STEPS_PER_TILE;
+
+  int actualStepsPerTileX = (tilesInX > 0) ? maxX / tilesInX : STEPS_PER_TILE;
+  int actualStepsPerTileY = (tilesInY > 0) ? maxY / tilesInY : STEPS_PER_TILE;
+
+  int stepsX = abs(dx) * actualStepsPerTileX;
+  int stepsY = abs(dy) * actualStepsPerTileY;
   bool directionX = (dx > 0) ? HIGH : LOW;
   bool directionY = (dy > 0) ? HIGH : LOW;
 
   moveXY(stepsX, stepsY, directionX, directionY);
 
-  currentX += dx;
-  currentY += dy;
+  currentX += (dx > 0 ? stepsX : -stepsX);
+  currentY += (dy > 0 ? stepsY : -stepsY);
 
   printCurrentPos();
 }
