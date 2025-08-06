@@ -75,6 +75,30 @@ const int IMAGE_TO_DRAW[6][6] = {
     {W, B, B, B, B, W},
     {W, W, W, W, W, W}};
 
+// For precision test
+// String commands[] = {
+//     "HOME",
+//     "X10Y10",
+//     "PAUSE",
+//     "X1Y01",
+
+//     "X10Y10",
+//     "PAUSE",
+//     "X1Y01",
+
+//     "X10Y10",
+//     "PAUSE",
+//     "X1Y01",
+
+//     "X10Y10",
+//     "PAUSE",
+//     "X1Y01",
+
+//     "X10Y10",
+//     "PAUSE",
+//     "X1Y01",
+// };
+
 String commands[] = {
     "DRAW"};
 
@@ -613,7 +637,11 @@ void drawImage()
       if (digitalRead(RESUME_SWITCH_PIN) == LOW)
       {
         runCommand("PAUSE");
-      } 
+      }
+      else
+      {
+        Serial.println("No pause, just continuing");
+      }
       int currentTileColor = IMAGE_TO_DRAW[x][y];
       int nextTileColor = (x + 1 < TILE_WIDTH)
                               ? IMAGE_TO_DRAW[x + 1][y]
