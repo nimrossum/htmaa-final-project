@@ -16,7 +16,7 @@
 #define DIR_PIN_Y 4
 #define STEP_PIN_Y 5
 
-#define STEP_DELAY 800
+#define STEP_DELAY 900
 
 #define STEPS_PER_TILE 47
 
