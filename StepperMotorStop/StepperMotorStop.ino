@@ -33,8 +33,8 @@
 
 #define RETRACT_AMOUNT 3 // tiles to retract before dispensing
 
-#define B 0;
-#define W 1;
+#define B 0
+#define W 1
 
 bool isHomed = LOW;
 
@@ -90,14 +90,14 @@ void setup()
   pinMode(STOP_SWITCH_PIN_Y_MAX, INPUT_PULLUP);
 
   // Stepper pins
-  pinMode(step_pin_x, OUTPUT);
-  pinMode(dir_pin_x, OUTPUT);
+  pinMode(STEP_PIN_X, OUTPUT);
+  pinMode(DIR_PIN_X, OUTPUT);
 
   pinMode(STEP_PIN_Y, OUTPUT);
-  pinMode(dir_pin_y, OUTPUT);
+  pinMode(DIR_PIN_Y, OUTPUT);
 
   // Initialize servos
-  servoWhite.attach(servo_pin_white);
+  servoWhite.attach(SERVO_PIN_WHITE);
   servoBlack.attach(SERVO_PIN_BLACK);
 
   servoWhite.write(SERVO_MAX_WHITE);
@@ -213,17 +213,17 @@ bool moveX(int steps, bool direction)
     Serial.println("Not homed! Please home first.");
     return false;
   }
-  digitalWrite(dir_pin_x, direction);
+  digitalWrite(DIR_PIN_X, direction);
 
   for (int i = 0; i < steps; i++)
   {
-    if (digitalRead(direction == LOW ? stop_switch_pin_x_min : stop_switch_pin_x_max) == LOW)
+    if (digitalRead(direction == LOW ? STOP_SWITCH_PIN_X_MIN : STOP_SWITCH_PIN_X_MAX) == LOW)
     {
       return HIGH;
     }
 
     currentX += (direction == LOW ? -1 : 1);
-    step(step_pin_x);
+    step(STEP_PIN_X);
   }
 
   return LOW;
@@ -236,11 +236,11 @@ bool moveY(int steps, bool direction)
     Serial.println("Not homed! Please home first.");
     return false;
   }
-  digitalWrite(dir_pin_y, direction);
+  digitalWrite(DIR_PIN_Y, direction);
 
   for (int i = 0; i < steps; i++)
   {
-    if (digitalRead(direction == LOW ? stop_switch_pin_y_min : stop_switch_pin_y_max) == LOW)
+    if (digitalRead(direction == LOW ? STOP_SWITCH_PIN_Y_MIN : STOP_SWITCH_PIN_Y_MAX) == LOW)
     {
       return HIGH;
     }
@@ -259,8 +259,8 @@ bool moveXY(int stepsX, int stepsY, bool directionX, bool directionY)
     return false;
   }
 
-  digitalWrite(dir_pin_x, directionX);
-  digitalWrite(dir_pin_y, directionY);
+  digitalWrite(DIR_PIN_X, directionX);
+  digitalWrite(DIR_PIN_Y, directionY);
 
   // Interleave steps in x and y directions
   int maxSteps = max(stepsX, stepsY);
@@ -268,17 +268,17 @@ bool moveXY(int stepsX, int stepsY, bool directionX, bool directionY)
   {
     if (i < stepsX)
     {
-      if (digitalRead(directionX == LOW ? stop_switch_pin_x_min : stop_switch_pin_x_max) == LOW)
+      if (digitalRead(directionX == LOW ? STOP_SWITCH_PIN_X_MIN : STOP_SWITCH_PIN_X_MAX) == LOW)
       {
         return HIGH;
       }
       currentX += (directionX == LOW ? -1 : 1);
-      step(step_pin_x);
+      step(STEP_PIN_X);
     }
 
     if (i < stepsY)
     {
-      if (digitalRead(directionY == LOW ? stop_switch_pin_y_min : stop_switch_pin_y_max) == LOW)
+      if (digitalRead(directionY == LOW ? STOP_SWITCH_PIN_Y_MIN : STOP_SWITCH_PIN_Y_MAX) == LOW)
       {
         return HIGH;
       }
@@ -331,12 +331,12 @@ void moveRelativeTile(int dx, int dy)
   else if (dx < 0)
     moveX(-dx * STEPS_PER_TILE, LOW);
 
-  if (dy > 0
+  if (dy > 0)
     moveY(dy * STEPS_PER_TILE, HIGH);
   else if (dy < 0)
     moveY(-dy * STEPS_PER_TILE, LOW);
 
-  currentX += dx
+  currentX += dx;
   currentY += dy;
 
   printCurrentPos();
@@ -351,16 +351,16 @@ void homeAll()
   Serial.println("HOME_X_MAX...");
   unsigned long startTime = millis();
 
-  int home_timeout = 5000;
-  int pause_delay = 100;
+  int HOME_TIMEOUT = 5000;
+  int PAUSE_DELAY = 100;
 
   // X_MAX
   startTime = millis();
 
-  while (digitalRead(stop_switch_pin_x_max) == HIGH)
+  while (digitalRead(STOP_SWITCH_PIN_X_MAX) == HIGH)
   {
     moveX(1, HIGH);
-    if (millis() - startTime > home_timeout)
+    if (millis() - startTime > HOME_TIMEOUT)
     {
       Serial.println("HOME_X_MAX timeout!");
       return;
@@ -368,15 +368,15 @@ void homeAll()
   }
 
   Serial.println("HOME_X_MAX complete!");
-  delay(pause_delay);
+  delay(PAUSE_DELAY);
   Serial.println("HOME_X_MIN...");
   startTime = millis();
 
-  while (digitalRead(stop_switch_pin_x_min) == HIGH)
+  while (digitalRead(STOP_SWITCH_PIN_X_MIN) == HIGH)
   {
     maxX += 1; // Increment maxX for each step until we hit the switch
     moveX(1, LOW);
-    if (millis() - startTime > home_timeout)
+    if (millis() - startTime > HOME_TIMEOUT)
     {
       Serial.println("HOME_X_MIN timeout!");
       break;
@@ -387,14 +387,14 @@ void homeAll()
   Serial.println("HOME_X_MIN complete!");
 
   // Y_MAX
-  delay(pause_delay);
+  delay(PAUSE_DELAY);
   Serial.println("HOME_Y_MAX...");
   startTime = millis();
 
-  while (digitalRead(stop_switch_pin_y_max) == HIGH)
+  while (digitalRead(STOP_SWITCH_PIN_Y_MAX) == HIGH)
   {
     moveY(1, HIGH);
-    if (millis() - startTime > home_timeout)
+    if (millis() - startTime > HOME_TIMEOUT)
     {
       Serial.println("HOME_Y_MAX timeout!");
       break;
@@ -406,11 +406,11 @@ void homeAll()
   Serial.println("HOME_Y_MIN...");
 
   startTime = millis();
-  while (digitalRead(stop_switch_pin_y_min) == HIGH)
+  while (digitalRead(STOP_SWITCH_PIN_Y_MIN) == HIGH)
   {
     maxY += 1; // Increment maxY for each step until we hit the switch
     moveY(1, LOW);
-    if (millis() - startTime > home_timeout)
+    if (millis() - startTime > HOME_TIMEOUT)
     {
       Serial.println("HOME_Y_MIN timeout!");
       return;
@@ -421,7 +421,7 @@ void homeAll()
   currentY = 0;
 
   Serial.println("HOME_Y complete");
-  delay(pause_delay);
+  delay(PAUSE_DELAY);
   Serial.println("Homing succesful!");
 
   Serial.println("X_MAX: " + String(maxX));
@@ -461,13 +461,13 @@ void runCommand(String command)
     int y = command.substring(yIndex).toInt();
     moveToTile(x, y);
   }
-  else if (command == "BLACK" || command == "B")
+  else if (command == "WHITE" || command == "W")
   {
     dispenseWhite();
   }
-  else if (command == "WHITE" || command == "W")
+  else if (command == "BLACK" || command == "B")
   {
-    dispenseBlack();
+    dispenseBlack(W);
   }
   else if (command == "DRAW" || command == "D")
   {
@@ -512,9 +512,9 @@ void printCurrentPos()
 void step(int pin)
 {
   H(pin);
-  delayMicroseconds(step_delay);
+  delayMicroseconds(STEP_DELAY);
   L(pin);
-  delayMicroseconds(step_delay);
+  delayMicroseconds(STEP_DELAY);
 }
 
 void drawImage()
@@ -527,12 +527,13 @@ void drawImage()
   {
     moveToTile(0, 0);
   }
+  int x = 0;
   int y = 0;
   int TILE_WIDTH = sizeof(IMAGE_TO_DRAW[0]) / sizeof(IMAGE_TO_DRAW[0][0]);
   int TILE_HEIGHT = sizeof(IMAGE_TO_DRAW) / sizeof(IMAGE_TO_DRAW[0]);
   for (y = 0; y < TILE_HEIGHT; y++)
   {
-    for (int x = 0; x < TILE_WIDTH; x++)
+    for (x = 0; x < TILE_WIDTH; x++)
     {
       int currentTileColor = IMAGE_TO_DRAW[x][y];
       int nextTileColor = (x + 1 < TILE_WIDTH)
