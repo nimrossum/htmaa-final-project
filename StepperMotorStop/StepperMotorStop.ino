@@ -16,11 +16,9 @@
 #define DIR_PIN_Y 4
 #define STEP_PIN_Y 5
 
-#define STEP_DELAY 1000 // microseconds (movement speed
-// #define step_delay 800 // microseconds (movement speed
+#define STEP_DELAY 800
 
-// TODO: Calibrate this:
-#define STEPS_PER_TILE 46 // steps for one tile distanc
+#define STEPS_PER_TILE 47
 
 #define SERVO_PIN_WHITE 11
 #define SERVO_PIN_BLACK 10
@@ -36,7 +34,7 @@
 #define B 0
 #define W 1
 
-bool isHomed = LOW;
+bool isHomed = false;
 
 int currentX = 0;
 int currentY = 0;
@@ -290,9 +288,9 @@ bool moveXY(int stepsX, int stepsY, bool directionX, bool directionY)
       currentY += (directionY == LOW ? -1 : 1);
       step(STEP_PIN_Y);
     }
-
-    return LOW;
   }
+
+  return LOW;
 }
 
 void moveToTile(int x, int y)
@@ -309,6 +307,8 @@ void moveToTile(int x, int y)
   bool directionX = (dx > 0) ? HIGH : LOW;
   bool directionY = (dy > 0) ? HIGH : LOW;
 
+  Serial.println("Moving to tile: x=" + String(x) + ", y=" + String(y));
+  Serial.println("using stepsX=" + String(stepsX) + ", stepsY=" + String(stepsY));
   moveXY(stepsX, stepsY, directionX, directionY);
 
   currentX = x;
